@@ -38,24 +38,22 @@ const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 const playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
 scene.add(playerModel);
 
-// Game loop
-function animate() {
-    requestAnimationFrame(animate);
-    updatePlayer();
-    renderer.render(scene, camera);
-}
-animate();
-
-function animate() {
-    requestAnimationFrame(animate);
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    renderer.render(scene, camera);
-}
-animate();
 // Add a ground plane
 const planeGeometry = new THREE.PlaneGeometry(50, 50);
 const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2; // Rotate to lay flat
 scene.add(plane);
+
+// Game loop
+function animate() {
+    requestAnimationFrame(animate);
+    
+    // Update player and cube rotation
+    updatePlayer();
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    
+    renderer.render(scene, camera);
+}
+animate();
