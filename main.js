@@ -19,7 +19,13 @@ const player = {
     velocity: new THREE.Vector3(0, 0, 0),
     isJumping: false,
 };
+
 const keys = {};
+
+// Disable right-click menu (fixes copy image popup issue)
+window.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+});
 
 // Listen for key presses
 window.addEventListener("keydown", (e) => {
@@ -27,14 +33,14 @@ window.addEventListener("keydown", (e) => {
 
     if (e.key === " " && !player.isJumping) {
         player.isJumping = true;
-        player.velocity.y = 0.2; // Jump velocity
+        player.velocity.y = 0.2; // Jump strength
     }
-    if (e.key === "Shift") player.speed = 0.2; // Running speed
+    if (e.key === "Shift") player.speed = 0.2; // Sprint
 });
 
 window.addEventListener("keyup", (e) => {
     keys[e.key.toLowerCase()] = false;
-    if (e.key === "Shift") player.speed = 0.1; // Walking speed
+    if (e.key === "Shift") player.speed = 0.1; // Walk speed
 });
 
 // Camera settings
@@ -51,15 +57,17 @@ let cameraRotationY = 0;
 
 // Mouse event listeners for right-click drag
 window.addEventListener("mousedown", (e) => {
-    if (e.button === 2) {
+    if (e.button === 2) { // Right-click to rotate camera
         isMouseDown = true;
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
     }
 });
+
 window.addEventListener("mouseup", () => {
     isMouseDown = false;
 });
+
 window.addEventListener("mousemove", (e) => {
     if (isMouseDown) {
         const deltaX = e.clientX - prevMouseX;
@@ -86,19 +94,21 @@ function updatePlayer() {
 
     if (direction.length() > 0) {
         direction.normalize();
-        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRotationX); // Rotate movement direction with camera
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRotationX);
         player.x += direction.x * player.speed;
         player.z += direction.z * player.speed;
     }
 
     // Gravity & Jumping
-    if (player.y > 1.5) {
+    if (player.y > 1.5 || player.isJumping) {
         player.velocity.y -= 0.01; // Gravity
         player.y += player.velocity.y;
-    } else {
+    }
+
+    if (player.y <= 1.5) {
         player.y = 1.5;
         player.velocity.y = 0;
-        player.isJumping = false;
+        player.isJumping = false; // Reset jump state when landing
     }
 
     playerModel.position.set(player.x, player.y, player.z);
