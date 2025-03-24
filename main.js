@@ -13,7 +13,7 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// Player model (Sphere)
+// Player model
 const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);
 const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 const playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
@@ -21,9 +21,9 @@ scene.add(playerModel);
 
 // Player variables
 const player = {
-    x: 0, y: 1.5, z: 5, 
-    speed: 0.1, 
-    velocity: new THREE.Vector3(0, 0, 0), 
+    position: new THREE.Vector3(0, 1.5, 5),
+    speed: 0.1,
+    velocity: new THREE.Vector3(0, 0, 0),
     isJumping: false
 };
 const keys = {};
@@ -53,56 +53,62 @@ let cameraPitch = 0;
 
 // Mouse listeners for looking around
 window.addEventListener("mousedown", (e) => {
-    if (e.button === 2) isMouseDown = true; // Right click to look around
+    if (e.button === 2) isMouseDown = true;
 });
 window.addEventListener("mouseup", () => isMouseDown = false);
 window.addEventListener("mousemove", (e) => {
     if (isMouseDown) {
         cameraYaw -= e.movementX * 0.002;
         cameraPitch -= e.movementY * 0.002;
-        cameraPitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraPitch)); // Prevent flipping
+        cameraPitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraPitch));
     }
 });
 
-// Movement system relative to camera direction
+// **Fix: Movement now aligns properly with camera direction**
 function updatePlayer() {
     let moveDirection = new THREE.Vector3();
-    let forward = new THREE.Vector3(Math.sin(cameraYaw), 0, Math.cos(cameraYaw));
-    let right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0));
+    let cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    
+    // Create right vector from camera
+    let rightVector = new THREE.Vector3();
+    rightVector.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0)).normalize();
 
-    if (keys["w"]) moveDirection.add(forward);
-    if (keys["s"]) moveDirection.sub(forward);
-    if (keys["a"]) moveDirection.sub(right);
-    if (keys["d"]) moveDirection.add(right);
+    // Forward and backward (aligned with camera)
+    if (keys["w"]) moveDirection.add(cameraDirection);
+    if (keys["s"]) moveDirection.sub(cameraDirection);
+
+    // Strafe left and right
+    if (keys["a"]) moveDirection.sub(rightVector);
+    if (keys["d"]) moveDirection.add(rightVector);
 
     if (moveDirection.length() > 0) {
         moveDirection.normalize();
-        player.x += moveDirection.x * player.speed;
-        player.z += moveDirection.z * player.speed;
+        player.position.addScaledVector(moveDirection, player.speed);
     }
 
     // Gravity & Jumping
-    if (player.y > 1.5 || player.isJumping) {
+    if (player.position.y > 1.5 || player.isJumping) {
         player.velocity.y -= 0.01;
-        player.y += player.velocity.y;
+        player.position.y += player.velocity.y;
     }
-    if (player.y <= 1.5) {
-        player.y = 1.5;
+    if (player.position.y <= 1.5) {
+        player.position.y = 1.5;
         player.velocity.y = 0;
         player.isJumping = false;
     }
 
-    playerModel.position.set(player.x, player.y, player.z);
+    playerModel.position.copy(player.position);
     updateCamera();
 }
 
 // Update camera to follow player
 function updateCamera() {
-    camera.position.set(player.x, player.y + 2, player.z);
+    camera.position.set(player.position.x, player.position.y + 2, player.position.z);
     let lookAtPos = new THREE.Vector3(
-        player.x + Math.sin(cameraYaw),
-        player.y + 2 + Math.sin(cameraPitch),
-        player.z + Math.cos(cameraYaw)
+        player.position.x + Math.sin(cameraYaw),
+        player.position.y + 2 + Math.sin(cameraPitch),
+        player.position.z + Math.cos(cameraYaw)
     );
     camera.lookAt(lookAtPos);
 }
