@@ -1,9 +1,42 @@
+/* Make sure the body and canvas are full screen */
 body, html {
     margin: 0;
+    padding: 0;
     overflow: hidden;
-    width: 100%;
     height: 100%;
+    width: 100%;
 }
+
 canvas {
     display: block;
 }
+
+/* The HUD container (holds crosshair and health bar) */
+.hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allow mouse events to pass through */
+}
+
+/* Crosshair at the center of the screen */
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    margin-left: -15px; /* Center horizontally */
+    margin-top: -15px; /* Center vertically */
+    border-left: 2px solid white;
+    border-top: 2px solid white;
+    z-index: 10;
+}
+
+/* Health bar at the top left */
+.health-bar {
+    position: absolute;
+    top: 20px;
+    left:
