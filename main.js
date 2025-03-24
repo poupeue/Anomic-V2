@@ -1,10 +1,5 @@
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -84,17 +79,20 @@ window.addEventListener("mousemove", (e) => {
 // Update player movement using cameraYaw for direction
 function updatePlayer() {
     let moveDirection = new THREE.Vector3(0, 0, 0);
+
+    // Calculate the forward and right vectors based on the camera's yaw
     let forward = new THREE.Vector3(Math.sin(cameraYaw), 0, Math.cos(cameraYaw));
     let right = new THREE.Vector3(-Math.cos(cameraYaw), 0, Math.sin(cameraYaw));
 
-    if (keys["w"]) moveDirection.add(forward);
-    if (keys["s"]) moveDirection.sub(forward);
-    if (keys["a"]) moveDirection.sub(right);
-    if (keys["d"]) moveDirection.add(right);
+    // Update movement based on the keys pressed (WASD)
+    if (keys["w"]) moveDirection.add(forward);  // Move forward
+    if (keys["s"]) moveDirection.sub(forward);  // Move backward
+    if (keys["a"]) moveDirection.sub(right);   // Move left
+    if (keys["d"]) moveDirection.add(right);   // Move right
 
     if (moveDirection.length() > 0) {
-        moveDirection.normalize();
-        player.position.addScaledVector(moveDirection, player.speed);
+        moveDirection.normalize();  // Normalize to prevent faster diagonal movement
+        player.position.addScaledVector(moveDirection, player.speed);  // Update position based on direction
     }
 
     // Gravity & Jumping
@@ -107,6 +105,7 @@ function updatePlayer() {
         player.velocity.y = 0;
         player.isJumping = false;
     }
+
     playerModel.position.copy(player.position);
     updateCamera();
 }
