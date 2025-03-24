@@ -5,7 +5,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Create player model (sphere)
-const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);  // Radius, width, height
+const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);
 const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 const playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
 scene.add(playerModel);
@@ -21,15 +21,19 @@ const player = {
 };
 const keys = {};
 
-// Listen for key presses for jumping and running
+// Listen for key presses
 window.addEventListener("keydown", (e) => {
-    if (e.key === " " && player.y === 1.5) {
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.key === " " && !player.isJumping) {
         player.isJumping = true;
-        player.velocity.y = 0.3; // Jump velocity
+        player.velocity.y = 0.2; // Jump velocity
     }
     if (e.key === "Shift") player.speed = 0.2; // Running speed
 });
+
 window.addEventListener("keyup", (e) => {
+    keys[e.key.toLowerCase()] = false;
     if (e.key === "Shift") player.speed = 0.1; // Walking speed
 });
 
@@ -47,7 +51,7 @@ let cameraRotationY = 0;
 
 // Mouse event listeners for right-click drag
 window.addEventListener("mousedown", (e) => {
-    if (e.button === 2) { // Right-click to rotate camera
+    if (e.button === 2) {
         isMouseDown = true;
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
@@ -61,11 +65,9 @@ window.addEventListener("mousemove", (e) => {
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
 
-        // Update camera rotation based on mouse movement
-        cameraRotationX += deltaX * 0.002; // Rotate left-right (x-axis)
-        cameraRotationY -= deltaY * 0.002; // Rotate up-down (y-axis)
+        cameraRotationX += deltaX * 0.002;
+        cameraRotationY -= deltaY * 0.002;
 
-        // Limit vertical camera rotation to prevent flipping
         cameraRotationY = Math.max(Math.min(cameraRotationY, Math.PI / 2), -Math.PI / 2);
 
         prevMouseX = e.clientX;
@@ -73,37 +75,40 @@ window.addEventListener("mousemove", (e) => {
     }
 });
 
-// Update function for player movement and camera
+// Update function for player movement
 function updatePlayer() {
-    if (keys["w"]) player.z -= player.speed;
-    if (keys["s"]) player.z += player.speed;
-    if (keys["a"]) player.x -= player.speed;
-    if (keys["d"]) player.x += player.speed;
+    let direction = new THREE.Vector3();
 
-    // Apply gravity
-    if (player.y > 1.5) {
-        player.velocity.y += -0.01; // Gravity
-        player.y += player.velocity.y; // Update vertical position
-    } else {
-        player.y = 1.5; // Keep grounded
-        player.velocity.y = 0;
+    if (keys["w"]) direction.z -= 1;
+    if (keys["s"]) direction.z += 1;
+    if (keys["a"]) direction.x -= 1;
+    if (keys["d"]) direction.x += 1;
+
+    if (direction.length() > 0) {
+        direction.normalize();
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRotationX); // Rotate movement direction with camera
+        player.x += direction.x * player.speed;
+        player.z += direction.z * player.speed;
     }
 
-    // Update player model position
+    // Gravity & Jumping
+    if (player.y > 1.5) {
+        player.velocity.y -= 0.01; // Gravity
+        player.y += player.velocity.y;
+    } else {
+        player.y = 1.5;
+        player.velocity.y = 0;
+        player.isJumping = false;
+    }
+
     playerModel.position.set(player.x, player.y, player.z);
     updateCamera();
 }
 
-// Update camera with mouse rotation
+// Update camera to follow player
 function updateCamera() {
-    // Update camera rotation based on mouse movement
-    camera.rotation.x = cameraRotationY;
-    camera.rotation.y = cameraRotationX;
-
-    // Adjust camera position relative to the player
-    const targetPosition = new THREE.Vector3(player.x, player.y + cameraHeight, player.z);
-    camera.position.lerp(targetPosition.add(cameraOffset), 0.1);
-    camera.lookAt(player.x, player.y + 1, player.z); // Camera always looks at the player
+    camera.position.set(player.x - Math.sin(cameraRotationX) * cameraDistance, player.y + cameraHeight, player.z - Math.cos(cameraRotationX) * cameraDistance);
+    camera.lookAt(player.x, player.y + 1, player.z);
 }
 
 // Add ground plane
