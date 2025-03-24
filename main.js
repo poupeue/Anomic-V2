@@ -2,7 +2,17 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio); // Improve rendering on high-DPI screens
 document.body.appendChild(renderer.domElement);
+
+// Make the canvas fullscreen
+function resizeCanvas() {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas(); // Call once at the start
 
 // Create player model (sphere)
 const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);
@@ -19,7 +29,6 @@ const player = {
     velocity: new THREE.Vector3(0, 0, 0),
     isJumping: false,
 };
-
 const keys = {};
 
 // Disable right-click menu (fixes copy image popup issue)
@@ -46,14 +55,13 @@ window.addEventListener("keyup", (e) => {
 // Camera settings
 const cameraDistance = 5;
 const cameraHeight = 2;
-const cameraOffset = new THREE.Vector3(0, cameraHeight, -cameraDistance);
+let cameraRotationX = 0;
+let cameraRotationY = 0;
 
 // Mouse control for camera rotation
 let isMouseDown = false;
 let prevMouseX = 0;
 let prevMouseY = 0;
-let cameraRotationX = 0;
-let cameraRotationY = 0;
 
 // Mouse event listeners for right-click drag
 window.addEventListener("mousedown", (e) => {
@@ -73,7 +81,7 @@ window.addEventListener("mousemove", (e) => {
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
 
-        cameraRotationX += deltaX * 0.002;
+        cameraRotationX -= deltaX * 0.002; // Inverted movement fix
         cameraRotationY -= deltaY * 0.002;
 
         cameraRotationY = Math.max(Math.min(cameraRotationY, Math.PI / 2), -Math.PI / 2);
@@ -94,7 +102,7 @@ function updatePlayer() {
 
     if (direction.length() > 0) {
         direction.normalize();
-        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRotationX);
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), -cameraRotationX); // Fix inverted movement
         player.x += direction.x * player.speed;
         player.z += direction.z * player.speed;
     }
