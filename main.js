@@ -4,7 +4,7 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Make the canvas fullscreen
+// Fullscreen & resize
 function resizeCanvas() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -13,32 +13,27 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// Create player model (sphere)
+// Player model (Sphere)
 const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);
 const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 const playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
 scene.add(playerModel);
 
-// Player movement variables
+// Player variables
 const player = {
-    x: 0,
-    y: 1.5,
-    z: 5,
-    speed: 0.1,
-    velocity: new THREE.Vector3(0, 0, 0),
-    isJumping: false,
+    x: 0, y: 1.5, z: 5, 
+    speed: 0.1, 
+    velocity: new THREE.Vector3(0, 0, 0), 
+    isJumping: false
 };
 const keys = {};
 
 // Disable right-click menu
-window.addEventListener("contextmenu", (event) => {
-    event.preventDefault();
-});
+window.addEventListener("contextmenu", (event) => event.preventDefault());
 
-// Listen for key presses
+// Key listeners
 window.addEventListener("keydown", (e) => {
     keys[e.key.toLowerCase()] = true;
-
     if (e.key === " " && !player.isJumping) {
         player.isJumping = true;
         player.velocity.y = 0.2;
@@ -51,49 +46,28 @@ window.addEventListener("keyup", (e) => {
     if (e.key === "Shift") player.speed = 0.1;
 });
 
-// Camera rotation variables
-let cameraRotationX = 0;
-let cameraRotationY = 0;
+// Mouse movement variables
 let isMouseDown = false;
-let prevMouseX = 0;
-let prevMouseY = 0;
+let cameraYaw = 0;
+let cameraPitch = 0;
 
-// Mouse event listeners for right-click drag
+// Mouse listeners for looking around
 window.addEventListener("mousedown", (e) => {
-    if (e.button === 2) {
-        isMouseDown = true;
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
-    }
+    if (e.button === 2) isMouseDown = true; // Right click to look around
 });
-
-window.addEventListener("mouseup", () => {
-    isMouseDown = false;
-});
-
+window.addEventListener("mouseup", () => isMouseDown = false);
 window.addEventListener("mousemove", (e) => {
     if (isMouseDown) {
-        const deltaX = e.clientX - prevMouseX;
-        const deltaY = e.clientY - prevMouseY;
-
-        cameraRotationX -= deltaX * 0.002;
-        cameraRotationY -= deltaY * 0.002;
-
-        cameraRotationY = Math.max(Math.min(cameraRotationY, Math.PI / 2), -Math.PI / 2);
-
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
+        cameraYaw -= e.movementX * 0.002;
+        cameraPitch -= e.movementY * 0.002;
+        cameraPitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraPitch)); // Prevent flipping
     }
 });
 
-// Movement system that follows camera direction
+// Movement system relative to camera direction
 function updatePlayer() {
     let moveDirection = new THREE.Vector3();
-    let forward = new THREE.Vector3(
-        -Math.sin(cameraRotationX),
-        0,
-        -Math.cos(cameraRotationX)
-    );
+    let forward = new THREE.Vector3(Math.sin(cameraYaw), 0, Math.cos(cameraYaw));
     let right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0));
 
     if (keys["w"]) moveDirection.add(forward);
@@ -112,7 +86,6 @@ function updatePlayer() {
         player.velocity.y -= 0.01;
         player.y += player.velocity.y;
     }
-
     if (player.y <= 1.5) {
         player.y = 1.5;
         player.velocity.y = 0;
@@ -126,10 +99,15 @@ function updatePlayer() {
 // Update camera to follow player
 function updateCamera() {
     camera.position.set(player.x, player.y + 2, player.z);
-    camera.lookAt(player.x - Math.sin(cameraRotationX), player.y + 2, player.z - Math.cos(cameraRotationX));
+    let lookAtPos = new THREE.Vector3(
+        player.x + Math.sin(cameraYaw),
+        player.y + 2 + Math.sin(cameraPitch),
+        player.z + Math.cos(cameraYaw)
+    );
+    camera.lookAt(lookAtPos);
 }
 
-// Add ground plane
+// Ground
 const planeGeometry = new THREE.PlaneGeometry(50, 50);
 const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
